@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "vipyto"
+version = "0.1.0"
+description = "Victor's Python Toolbox"
+authors = ["vict0rsch <vsch@pm.me>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+tqdm = ">=4"
+rich = ">=13"
+ipython = ">=8.15.0"
+minydra = ">=0.1.6"
+gitmopy = ">=0.4.1"
+ipdb = ">=0.13"
+black = ">=23"
+isort = ">=5"
+flake8 = ">=6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
