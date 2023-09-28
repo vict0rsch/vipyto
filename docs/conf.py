@@ -13,9 +13,14 @@ author = 'vict0rsch'
 version = '0.1.0'
 release = '0.1.0'
 
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
 
 extensions = [
     "myst_parser",
@@ -59,7 +64,6 @@ intersphinx_mapping = {
 todo_include_todos = True
 
 
-
 # Configuration section from vipyto:
 # ----------------------------------
 
@@ -68,7 +72,7 @@ todo_include_todos = True
 
 autodoc_typehints = "description"
 autoapi_type = "python"
-autoapi_dirs = ["../vipyto"]
+autoapi_dirs = [str(ROOT/ "vipyto")]
 autoapi_member_order = "alphabetical"
 autoapi_template_dir = "_templates/autoapi"
 autoapi_python_class_content = "init"
@@ -76,7 +80,7 @@ autoapi_options = [
     "members",
     "undoc-members",
     "show-inheritance",
-    "show-module-summary",
+    # "show-module-summary",
     "special-members",
 ]
 autoapi_keep_files = False
@@ -92,7 +96,7 @@ mathjax3_config = {
     "tex": {
         "inlineMath": [
             ["$", "$"],
-            ["\(", "\)"],
+            ["\\(", "\\)"],
         ],
         "processEscapes": True,
     },
