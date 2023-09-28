@@ -1,6 +1,47 @@
+"""
+A few utilities to manipulate paths.
+
+.. code-block:: python
+
+    from vipyo.path import resolve
+
+    # Resolves environment variables and user home directory
+    path = resolve("~/path/to/$ENV_VAR/file")
+
+.. code-block:: python
+
+    from vipyo.path import add_git_root_to_path
+
+    add_git_root_to_path()
+
+    # Now you can import modules from the git root
+
+    from mypackage import mymodule
+
+    # This is particularly useful when you want to use a module
+    # from a script that is not in the root of your project
+
+.. code-block:: python
+
+    from vipyo.path import get_git_root
+
+    # without adding it to the path, you may want to get the absolute
+    # path to your project to manipulate paths in your code with
+    # respect to the project root.
+
+    root = get_git_root()
+
+.. note::
+
+    Functions refer to ``[...]_git_[...]`` because this is how the root path
+    is determined: it is the **first** folder that contains a ``.git`` folder
+    when going up the directory tree from the current working directory.
+
+"""
+
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def get_git_root():

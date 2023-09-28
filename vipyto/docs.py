@@ -1,11 +1,59 @@
-import re
-from textwrap import dedent
-from importlib.metadata import version as get_version
-from importlib.metadata import PackageNotFoundError
+"""
+This module contains utilities related to documenting a Python project with
+Sphinx.
 
+Its main function is :py:func:`~vipyto.docs.init_docs`, which does the following:
+
+- Creates a ``docs/`` directory in the root of the project
+- Runs ``sphinx-quickstart`` in that directory, with a selection of extensions
+- Adds a selection of extensions to ``docs/conf.py``
+- Adds a selection of configuration to ``docs/conf.py``
+- Creates a ``docs/requirements-docs.txt`` file with the packages required to
+    build the docs
+- Creates a ``.readthedocs.yml`` file with the configuration required by
+    readthedocs.io
+- Creates a ``docs/index.rst`` file (which includes your README.md by default)
+- Installs the packages required to build the docs (starting with ``sphinx``
+    if it is not already installed)
+
+Importantly, it sets up ``autoapi`` to document your code automatically from its
+existing docstrings. This means that you don't need to write any additional
+documentation to get started with Sphinx.
+
+.. note::
+
+    This function expects your package to be called the same as the folder it is in.
+    This means you would have a directory ``{project}/`` which would contain
+    ``{project}/{project}``, ``{project}/.git/``, ``{project}/README.md``, etc.
+
+    If that is not the case, you should update ``docs/conf.py``, specifically
+    the ``autoapi_dirs`` variable.
+
+"""
+import re
+import shutil
+import sys
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as get_version
+from textwrap import dedent
+import subprocess
+
+from vipyto import log, status
 from vipyto.cmd import run_command
 from vipyto.path import get_git_root
-from vipyto import print
+
+PREAMBLE = """\
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+"""
+"""
+Imports settings.
+
+:meta private:
+"""
 
 RTD_CONF = """
 # Read the Docs configuration file for Sphinx projects
@@ -27,7 +75,8 @@ build:
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
   configuration: docs/conf.py
-  # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
+  # You can configure Sphinx to use a different builder, for instance use the
+  # dirhtml builder for simpler URLs
   # builder: "dirhtml"
   # Fail on all warnings to avoid broken references
   # fail_on_warning: true
@@ -43,21 +92,31 @@ python:
   install:
     - requirements: docs/requirements-docs.txt
 """
+"""
+Contents for the ``.readthedocs.yml`` file that will be created by
+:py:func:`~vipyto.docs.init_docs`.
 
-REQS = """
+:meta private:
+"""
+
+REQS = """\
 sphinx
 myst-parser
-furo==2023.3.27
+furo
 sphinx-copybutton
 sphinx-autodoc-typehints
-sphinx-autoapi==2.1.0
+sphinx-autoapi
 sphinx-math-dollar
 sphinx-design
 sphinx-copybutton
 sphinxext-opengraph
 """
+"""
+List of packages that will be installed in the docs environment by
+:py:func:`~vipyto.docs.init_docs`.
+"""
 
-EXTS = """
+EXTS = """\
 extensions = [
     "myst_parser",
     "sphinx.ext.viewcode",
@@ -74,9 +133,14 @@ extensions = [
     "sphinxext.opengraph",
 ]
 """
+"""
+Overwrite of the ``extensions`` list in ``docs/conf.py`` that will be created by
+:py:func:`~vipyto.docs.init_docs`.
 
-CONFIGS = """
+:meta private:
+"""
 
+CONFIGS = r"""
 # Configuration section from vipyto:
 # ----------------------------------
 
@@ -85,16 +149,13 @@ CONFIGS = """
 
 autodoc_typehints = "description"
 autoapi_type = "python"
-autoapi_dirs = ["../$PROJECT"]
-autoapi_member_order = "alphabetical"
+autoapi_dirs = [str(ROOT/ "$PROJECT")]
+autoapi_member_order = "groupwise"
 autoapi_template_dir = "_templates/autoapi"
 autoapi_python_class_content = "init"
 autoapi_options = [
     "members",
     "undoc-members",
-    "show-inheritance",
-    "show-module-summary",
-    "special-members",
 ]
 autoapi_keep_files = False
 
@@ -137,8 +198,14 @@ ogp_social_cards = {
 }
 
 """
+"""
+Additional configuration that will be added to ``docs/conf.py`` by
+:py:func:`~vipyto.docs.init_docs`.
 
-INDEX = """
+:meta private:
+"""
+
+INDEX = """\
 .. include:: ../README.md
    :parser: myst_parser.sphinx_
 
@@ -149,11 +216,28 @@ INDEX = """
    self
 
 """
+"""
+Default contents for ``docs/index.rst`` that will be created by
+:py:func:`~vipyto.docs.init_docs`. It includes the README.md file.
+
+:meta private:
+"""
 
 
 def init_docs():
     """
-    Initialize the docs for a project.
+    Initialize the Sphinx docs for a project with a selection of extensions.
+
+    This will attempt to create a docs/ folder, run ``sphinx-quickstart``,
+    customize the resulting ``conf.py``, and install the packages required to
+    build the docs. It will also create a ``.readthedocs.yml`` file in your
+    repo's root folder, which is required by readthedocs.io.
+
+    .. note::
+
+        Run ``vipyto docs init`` from the root of your project to call this function
+        directly.
+
     """
     root = get_git_root()
     project = root.name
@@ -165,13 +249,19 @@ def init_docs():
             pyproject = root / "pyproject.toml"
             lines = pyproject.read_text().split("\n")
             for line in lines:
-                if re.match("version\s?=\s?.+", line):
+                if re.match(r"version\s?=\s?.+", line):
                     version = line.split("=")[1].strip().strip('"').strip("'")
                     break
         except FileNotFoundError:
             version = "0.1.0"
 
-    print(f"Initializing docs for {project} version {version} and author {author}")
+    if (root / "docs").exists():
+        log(f"You already have a docs/ directory in {root}.", style="yellow")
+        if "y" not in input("Do you want to overwrite its contents? [y/N] ").lower():
+            return
+        shutil.rmtree(root / "docs")
+
+    log(f"Initializing docs for {project} version {version} and author {author}")
     (root / "docs").mkdir(exist_ok=True)
     command = " ".join(
         [
@@ -181,7 +271,15 @@ def init_docs():
             "docs/",
         ]
     )
-    run_command(command)
+    try:
+        import sphinx  # noqa: F401
+    except ImportError:
+        with status("Sphinx is not installed. Installing it now..."):
+            run_command(f"{sys.executable} -m pip install --upgrade pip")
+            run_command(f"{sys.executable} -m pip install sphinx")
+    with status("Running sphinx-quickstart..."):
+        run_command(command)
+
     conf = root / "docs" / "conf.py"
     lines = conf.read_text().split("\n")
     new_lines = []
@@ -196,6 +294,9 @@ def init_docs():
         if line == "html_static_path = ['_static']":
             line += "\n" + 'html_css_files = ["css/custom.css"]'
 
+        if "# -- General configuration" in line:
+            line = PREAMBLE + "\n" + line
+
         # store
         if not is_exts:
             new_lines.append(line)
@@ -203,7 +304,6 @@ def init_docs():
         if is_exts and line == "]":
             is_exts = False
             new_lines.append(EXTS)
-
     new_lines.append(CONFIGS.replace("$PROJECT", project))
     conf.write_text("\n".join(new_lines))
     (root / "docs" / "requirements-docs.txt").write_text(REQS)
@@ -213,8 +313,25 @@ def init_docs():
     (root / "docs" / "_static" / "css" / "custom.css").touch()
     (root / "docs" / "index.rst").write_text(INDEX)
 
-    print("[bold green]Done! Run `cd docs && make html` to build the docs![bold green]")
-    print(
-        "[yellow]You may need to update docs/conf.py to update your package directory "
-        + "(line: `autoapi_dirs = `)."
-    )
+    with status("Installing docs dependencies..."):
+        run_command(f"{sys.executable} -m pip install --upgrade pip")
+        run_command(f"{sys.executable} -m pip install -r docs/requirements-docs.txt")
+
+    with status("Running `cd docs && make html` to build the docs"):
+        try:
+            run_command("make html", cwd=str(root / "docs"))
+            log("Your docs were built successfully!", style="green")
+            log("See them by openning `docs/_build/html/index.html` in your browser.")
+        except subprocess.CalledProcessError:
+            log(
+                dedent(
+                    f"""\
+                Docs building error.
+                The docs were built assuming your project is called `{project}`.
+                If your code is in an other folder, this may be why the build failed.
+                In that case, update docs/conf.py (line: `autoapi_dirs = `).
+                """
+                ),
+                style="orange_red1",
+            )
+    log("Run `make html` in the `docs/` folder to build the docs yourself.")

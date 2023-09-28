@@ -1,18 +1,53 @@
-import subprocess
-import re
+"""
+Training utilities for PyTorch deep learning code.
+
+.. warning::
+
+    Requires torch and numpy to be installed.
+
+For instance if you don't want to always manually match the number of workers
+in your dataloaders to the number of cpus available on your machine (for example
+when you vary the number of cpus available to your job on a SLURM cluster), you can
+just use :py:func:`~vipyto.train.get_num_workers_from_cpus` to get the number of
+CPUs (divided by the number of GPUs if GPUs are available):
+
+.. code-block:: python
+
+    from vipyto.train import get_num_workers_from_cpus, set_seeds
+
+    # parse your args
+    ...
+    args = parse_args()
+    # initialize a generic config dict
+    config = {
+        "workers": 2,
+    }
+
+    ...
+    if not args.keep_workers:
+        config["workers"] = get_num_workers_from_cpus()
+
+    ...
+
+    set_seeds(args.seed) # set numpy, random, torch and cuda seeds
+                         # and set cudnn to deterministic mode for reproducibility
+
+"""
+
 import os
+import re
+import subprocess
 
 from vipyto import print
 from vipyto.cmd import run_command
 from vipyto.path import resolve
 
-IMPORTS_OK = False
 try:
-    import torch
     import random
-    import numpy as np
 
-    IMPORTS_OK = True
+    import numpy as np
+    import torch
+
 except ImportError:
     print(
         "\n[bold red]💥 torch and numpy must be"
