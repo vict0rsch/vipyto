@@ -4,6 +4,8 @@ Command-line intereface for ``vipyto``.
 Currently, the following commands are available:
 
 - ``vipyto docs init``: Initialize the docs for your project using Sphinx
+- ``vipyto docs build``: Build the docs for your project (running ``make html``
+    in the docs folder for you)
 
 
 .. note::
@@ -12,13 +14,14 @@ Currently, the following commands are available:
     like ``sphinx`` and Sphinx extensions. You can find the list of packages in
     :py:const:`~vipyto.docs.REQS`.
 """
+import subprocess
+
 import typer
 
+from vipyto import log, status
+from vipyto.cmd import run_command
 from vipyto.docs import init_docs
 from vipyto.path import get_git_root
-from vipyto.cmd import run_command
-import subprocess
-from vipyto import status, log
 
 app = typer.Typer()
 docs_app = typer.Typer()

@@ -32,11 +32,11 @@ documentation to get started with Sphinx.
 """
 import re
 import shutil
+import subprocess
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as get_version
 from textwrap import dedent
-import subprocess
 
 from vipyto import log, status
 from vipyto.cmd import run_command

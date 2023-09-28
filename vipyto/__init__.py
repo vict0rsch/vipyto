@@ -21,8 +21,8 @@ Command-line interface summary:
     vipyto docs init # Initialize the docs for your project using Sphinx
     vipyto docs build # Build the docs for your project using Sphinx
 
-Also you can use `rich <https://rich.readthedocs.io/en/stable/introduction.html>`_ to print
-rich text to the console:
+Also you can use `rich <https://rich.readthedocs.io/en/stable/introduction.html>`_
+to print rich text to the console:
 
 .. code-block:: python
 
